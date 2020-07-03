@@ -24,7 +24,11 @@ import scipy.stats as st
 
 
 ##### Dash Callback Functions #####
+app = dash.Dash(__name__)
 
+app.layout = html.Div([
+    
+])
 
 ##### Run ######
 if __name__ == '__main__':
