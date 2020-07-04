@@ -11,8 +11,8 @@ from nba_api.stats.static import players
 from nba_api.stats.static import teams
 from nba_api.stats.endpoints import shotchartdetail
 from nba_api.stats.endpoints import playercareerstats
-import plotly.express as px
-import plotly.graph_objects as go
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scipy.stats as st
 
@@ -23,19 +23,16 @@ def get_players_list():
     
     return player_lst
     
-def get_player_shotchartdetail(player_name, season_id, season_type):
-    # player id
-    player_id = players.find_players_by_full_name(player_name)[0]['id']
-    
+def get_player_shotchartdetail(player, season_id, season_type):
     # career df
-    career_df = playercareerstats.PlayerCareerStats(player_id=player_id).get_data_frames()[0]
+    career_df = playercareerstats.PlayerCareerStats(player_id=player).get_data_frames()[0]
     
     # team id during the season
     team_id = career_df[career_df['SEASON_ID'] == season_id]['TEAM_ID']
     
     # shotchardtdetail endpoint
     shotchartlist = shotchartdetail.ShotChartDetail(team_id=int(team_id), 
-                                                   player_id=int(player_id), 
+                                                   player_id=int(player), 
                                                    season_type_all_star=season_type, 
                                                    season_nullable=season_id,
                                                    context_measure_simple="FGA").get_data_frames()
@@ -203,11 +200,13 @@ def draw_plotly_court(fig, fig_width=600, margins=10, layer='below'):
     )
     return True
 
-def make_shot_chart (fig, shots_df, name, season_id):
+def make_shot_chart (shots_df, name, season_id):
     '''
     params: fig-plotly graph object Figure, shots_df-DataFrame of shotchartdetail, name-name of player/team, season_id-year of season
     param-type: fig-plotly graph object Figure, shots_df- pandas DataFrame, name-string, season_id-string
     '''
+    fig = go.Figure()
+
     fig.add_trace(go.Scatter(
         x=shots_df[shots_df['SHOT_MADE_FLAG']==0]['LOC_X'],
         y=shots_df[shots_df['SHOT_MADE_FLAG']==0]['LOC_Y'],
@@ -230,9 +229,13 @@ def make_shot_chart (fig, shots_df, name, season_id):
     
     draw_plotly_court(fig)
 
-def make_heatmap(fig, shots_df, name, season_id):
+    return fig
+
+def make_heatmap(shots_df, name, season_id):
     cubehelix_cs=[[0.0, '#ffffff'],[0.16666666666666666, '#edcfc9'],[0.3333333333333333, '#daa2ac'],[0.5, '#bc7897'],
     [0.6666666666666666, '#925684'],[0.8333333333333333, '#5f3868'],[1.0, '#2d1e3e']]
+
+    fig = go.Figure()
 
     fig.add_trace(go.Histogram2dContour(
         x = shots_df['LOC_X'],
@@ -249,8 +252,10 @@ def make_heatmap(fig, shots_df, name, season_id):
             'x':0.5,
             'xanchor': 'center',
             'yanchor': 'top'})
+    
+    return fig
 
-def make_player_hexbin(fig,shots_df,name,season_id):
+def make_player_hexbin(shots_df,name,season_id):
     Hex = plt.hexbin(x=shots_df['LOC_X'], y=shots_df['LOC_Y'],gridsize=25,vmin = 0.0, vmax = 0.7,
     cmap=plt.get_cmap('YlOrRd'), mincnt=3)
 
@@ -281,6 +286,8 @@ def make_player_hexbin(fig,shots_df,name,season_id):
         for i in range(len(freq_by_hex))
     ]
 
+    fig = go.Figure()
+
     fig.add_trace(go.Scatter(x=xlocs, y=ylocs, mode='markers', name='markers', 
                         marker=dict(size=freq_by_hex, sizemode='area', sizeref= 2. * max(freq_by_hex) / (18. ** 2), 
                                     sizemin=4.5,color=accs_by_hex, colorscale='YlOrRd',line=dict(width=1, color='#333333'),
@@ -296,6 +303,8 @@ def make_player_hexbin(fig,shots_df,name,season_id):
             'x':0.5,
             'xanchor': 'center',
             'yanchor': 'top'})
+    
+    return fig
 
 ####### Dash Layout ###########
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -325,9 +334,7 @@ app.layout = html.Div([
                 id='season_type',
                 options=[
                     {'label': 'Regular Season', 'value': 'Regular Season'},
-                    {'label': 'Pre Season', 'value': 'Pre Season'},
-                    {'label': 'Playoffs', 'value': 'Playoffs'},
-                    {'label': 'All Star', 'value': 'All Star'}
+                    {'label': 'Playoffs', 'value': 'Playoffs'}
                 ],
                 value='Regular Season'
             )
@@ -337,25 +344,17 @@ app.layout = html.Div([
     ]),
 
     #Shot Chart Tabs
-    html.Div([
-        dcc.Tabs([
-            dcc.Tab(label='Shot Chart', children=[
-                dcc.Graph(id='shot_chart')
-            ])
+    dcc.Tabs([
+        dcc.Tab(label='Shot Chart', children=[
+            dcc.Graph(id='shot_chart')
         ]),
-
-        dcc.Tabs([
-            dcc.Tab(label='Heat Map', children=[
-                dcc.Graph(id='heatmap')
-            ])
+        dcc.Tab(label='Heatmap', children=[
+            dcc.Graph(id='heatmap')
         ]),
-
-        dcc.Tabs([
-            dcc.Tab(label='Hexbin', children=[
-                dcc.Graph(id='hexbin')
-            ])
+        dcc.Tab(label='Hexbin', children=[
+            dcc.Graph(id='hexbin')
         ]),
-    ])
+    ],style={'width': '55%', 'float': 'left', 'display': 'inline-block'})
 ])
 
 ###### Callback Dash Functions ##########
@@ -381,15 +380,12 @@ def get_active_seasons(selected_player):
 )
 def display_shot_charts(player, season, season_type):
     shots_df,league_avg = get_player_shotchartdetail(player,season,season_type)
+    name = players.find_player_by_id(player)['full_name']
+    shot_fig = make_shot_chart(shots_df, name, season)
 
-    shot_fig = go.Figure()
-    make_shot_chart(shot_fig, shots_df, player, season)
+    heat_fig = make_heatmap(shots_df,name,season)
 
-    heat_fig = go.Figure()
-    make_heatmap(heat_fig,shots_df,player,season)
-
-    hex_fig = go.Figure()
-    make_player_hexbin(hex_fig,shots_df,player,season)
+    hex_fig = make_player_hexbin(shots_df,name,season)
 
     return shot_fig, heat_fig, hex_fig
 
