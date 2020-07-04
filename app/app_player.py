@@ -200,13 +200,11 @@ def draw_plotly_court(fig, fig_width=600, margins=10, layer='below'):
     )
     return True
 
-def make_shot_chart (shots_df, name, season_id):
+def make_shot_chart (fig, shots_df, name, season_id):
     '''
     params: fig-plotly graph object Figure, shots_df-DataFrame of shotchartdetail, name-name of player/team, season_id-year of season
     param-type: fig-plotly graph object Figure, shots_df- pandas DataFrame, name-string, season_id-string
     '''
-    fig = go.Figure()
-
     fig.add_trace(go.Scatter(
         x=shots_df[shots_df['SHOT_MADE_FLAG']==0]['LOC_X'],
         y=shots_df[shots_df['SHOT_MADE_FLAG']==0]['LOC_Y'],
@@ -226,24 +224,16 @@ def make_shot_chart (shots_df, name, season_id):
             'x':0.5,
             'xanchor': 'center',
             'yanchor': 'top'})
-    
-    draw_plotly_court(fig)
 
-    return fig
-
-def make_heatmap(shots_df, name, season_id):
+def make_heatmap(fig, shots_df, name, season_id):
     cubehelix_cs=[[0.0, '#ffffff'],[0.16666666666666666, '#edcfc9'],[0.3333333333333333, '#daa2ac'],[0.5, '#bc7897'],
     [0.6666666666666666, '#925684'],[0.8333333333333333, '#5f3868'],[1.0, '#2d1e3e']]
-
-    fig = go.Figure()
 
     fig.add_trace(go.Histogram2dContour(
         x = shots_df['LOC_X'],
         y = shots_df['LOC_Y'],
         colorscale=cubehelix_cs,
         contours=dict(showlines=False)))
-
-    draw_plotly_court(fig, layer='above')
 
     fig.update_layout(
         title={
@@ -252,10 +242,8 @@ def make_heatmap(shots_df, name, season_id):
             'x':0.5,
             'xanchor': 'center',
             'yanchor': 'top'})
-    
-    return fig
 
-def make_player_hexbin(shots_df,name,season_id):
+def make_player_hexbin(fig, shots_df,name,season_id):
     Hex = plt.hexbin(x=shots_df['LOC_X'], y=shots_df['LOC_Y'],gridsize=25,vmin = 0.0, vmax = 0.7,
     cmap=plt.get_cmap('YlOrRd'), mincnt=3)
 
@@ -286,15 +274,12 @@ def make_player_hexbin(shots_df,name,season_id):
         for i in range(len(freq_by_hex))
     ]
 
-    fig = go.Figure()
-
     fig.add_trace(go.Scatter(x=xlocs, y=ylocs, mode='markers', name='markers', 
                         marker=dict(size=freq_by_hex, sizemode='area', sizeref= 2. * max(freq_by_hex) / (18. ** 2), 
                                     sizemin=4.5,color=accs_by_hex, colorscale='YlOrRd',line=dict(width=1, color='#333333'),
                                     colorbar=dict(thickness=15, x=0.84,y=0.87, yanchor='middle',len=0.2,
                                                     title=dict(text="<B>Accuracy</B>",font=dict(size=11,color='#4d4d4d'))),
                                     symbol='hexagon'), text=hexbin_text, hoverinfo='text'))
-    draw_plotly_court(fig)
 
     fig.update_layout(
         title={
@@ -304,7 +289,6 @@ def make_player_hexbin(shots_df,name,season_id):
             'xanchor': 'center',
             'yanchor': 'top'})
     
-    return fig
 
 ####### Dash Layout ###########
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -381,11 +365,47 @@ def get_active_seasons(selected_player):
 def display_shot_charts(player, season, season_type):
     shots_df,league_avg = get_player_shotchartdetail(player,season,season_type)
     name = players.find_player_by_id(player)['full_name']
-    shot_fig = make_shot_chart(shots_df, name, season)
+    
+    shot_fig = go.Figure()
+    heat_fig = go.Figure()
+    hex_fig = go.Figure()
 
-    heat_fig = make_heatmap(shots_df,name,season)
+    if int(season[:4]) >= 1996 :
+        make_shot_chart(shot_fig,shots_df, name, season)
+        draw_plotly_court(shot_fig)
+        
+        make_heatmap(heat_fig,shots_df,name,season)
+        draw_plotly_court(heat_fig, layer='above')
+        
+        make_player_hexbin(hex_fig,shots_df,name,season)
+        draw_plotly_court(hex_fig)
+    else:
+        draw_plotly_court(shot_fig)
+        shot_fig.update_layout(
+            title={
+                'text': 'No Shot Chart Data',
+                'y':0.98,
+                'x':0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'})
 
-    hex_fig = make_player_hexbin(shots_df,name,season)
+        draw_plotly_court(heat_fig)
+        heat_fig.update_layout(
+            title={
+                'text': 'No Shot Chart Data',
+                'y':0.98,
+                'x':0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'})
+
+        draw_plotly_court(hex_fig)
+        hex_fig.update_layout(
+            title={
+                'text': 'No Shot Chart Data',
+                'y':0.98,
+                'x':0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'}) 
 
     return shot_fig, heat_fig, hex_fig
 
