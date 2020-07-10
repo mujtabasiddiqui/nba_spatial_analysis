@@ -15,6 +15,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scipy.stats as st
+import requests
 
 ####### Analysis, Visualization, Data Pull Functions ############
 def get_players_list():
@@ -295,8 +296,8 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([
+    #Search Bars
     html.Div([
-        #Search Bars
         html.Div([
             dcc.Dropdown(
                 id='player',
@@ -311,7 +312,7 @@ app.layout = html.Div([
                 id='season',
                 value='2018-19'
             ),
-        ],style={'width': '32%', 'float': 'center', 'display': 'inline-block','padding-left': '2%'}),
+        ],style={'width': '32%', 'float': 'center', 'display': 'inline-block','paddingLeft': '2%'}),
 
         html.Div([
             dcc.Dropdown(
@@ -323,22 +324,37 @@ app.layout = html.Div([
                 value='Regular Season'
             )
         ],
-        style={'width': '32%', 'float': 'right', 'display': 'inline-block'})
-        
+        style={'width': '32%', 'float': 'right', 'display': 'inline-block'})     
     ]),
 
-    #Shot Chart Tabs
-    dcc.Tabs([
-        dcc.Tab(label='Shot Chart', children=[
-            dcc.Graph(id='shot_chart')
+    #Shot Charts and Top Left Info
+    html.Div(children=[
+        #Shot Chart Tabs
+        dcc.Tabs([
+            dcc.Tab(label='Shot Chart', children=[
+                dcc.Graph(id='shot_chart')
+            ]),
+            dcc.Tab(label='Heatmap', children=[
+                dcc.Graph(id='heatmap')
+            ]),
+            dcc.Tab(label='Hexbin', children=[
+                dcc.Graph(id='hexbin')
+            ]),
         ]),
-        dcc.Tab(label='Heatmap', children=[
-            dcc.Graph(id='heatmap')
-        ]),
-        dcc.Tab(label='Hexbin', children=[
-            dcc.Graph(id='hexbin')
-        ]),
-    ],style={'width': '55%', 'float': 'left', 'display': 'inline-block'})
+
+        html.Div(children='''Shot Chart Data Not Available For Seasons Prior to 1996-97*''',style={'color': 'red'}) 
+    ],style={'width': '45%', 'float': 'left', 'display': 'inline-block'}),
+
+    #Player Stats Top Right
+    html.Div(children=[
+        html.Div([
+            html.Img(id='player_img', style={'width': '30%','paddingLeft': '2%', 'display': 'inline-block'}),
+
+            html.Div([
+                html.H3(id='player_name')
+            ])
+        ], style={'background': '#1975FA', 'border-radius':'5px'})
+    ],style={'width': '50%', 'float': 'right', 'display': 'inline-block'})
 ])
 
 ###### Callback Dash Functions ##########
@@ -409,6 +425,17 @@ def display_shot_charts(player, season, season_type):
 
     return shot_fig, heat_fig, hex_fig
 
+@app.callback(
+    Output('player_img', 'src'),
+    [Input('player', 'value')]
+)
+def get_player_img(player):
+    url = f'https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/{player}.png'
+    r = requests.head(url)
+    if r.status_code == 200:
+        return url
+    else:
+        return 'https://stats.nba.com/media/img/league/nba-headshot-fallback.png'
 
 #### Run ###
 if __name__ == '__main__':
