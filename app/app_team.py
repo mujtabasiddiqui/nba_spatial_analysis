@@ -17,6 +17,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scipy.stats as st
 
+## Navbar
+from navbar import Navbar
+nav = Navbar()
+
 def get_teams_list():
     teams_dict_lst = teams.get_teams()
     team_lst = [{'label': team_dict['full_name'], 'value': team_dict['id']} for team_dict in teams_dict_lst]
@@ -217,7 +221,11 @@ def make_shot_chart (fig, shots_df, name, season_id):
             'y':0.98,
             'x':0.5,
             'xanchor': 'center',
-            'yanchor': 'top'})
+            'yanchor': 'top'},
+        legend=dict(x=0.80,y=0.94,
+            bordercolor="black",
+            bgcolor="LightSteelBlue",
+            borderwidth=0.5))
 
 def make_heatmap(fig, shots_df, name, season_id):
     cubehelix_cs=[[0.0, '#ffffff'],[0.16666666666666666, '#edcfc9'],[0.3333333333333333, '#daa2ac'],[0.5, '#bc7897'],
@@ -237,103 +245,147 @@ def make_heatmap(fig, shots_df, name, season_id):
             'xanchor': 'center',
             'yanchor': 'top'})
 
-def make_team_hexbin(fig, shots_df,name,season_id):
-    Hex = plt.hexbin(x=shots_df['LOC_X'], y=shots_df['LOC_Y'],gridsize=25,vmin = 0.0, vmax = 0.7,
-    cmap=plt.get_cmap('YlOrRd'), mincnt=10)
+def make_team_hexbin(fig, shots_df,league_avg,name,season_id):
+    grid_size= 40 
+    min_show = max(2, round(len(shots_df)* 0.001)) # min count for shots in hex
+    
+    x_loc = []
+    y_loc = []
+    y_limit = 300
 
-    HexC = plt.hexbin(x=shots_df['LOC_X'], y=shots_df['LOC_Y'], C=shots_df['SHOT_MADE_FLAG'],gridsize=25,vmin = 0.0, vmax = 0.7, 
-    cmap=plt.get_cmap('YlOrRd'), mincnt=9)
+    for y in range(len(shots_df['LOC_Y'])):
+        if shots_df['LOC_Y'][y] < y_limit:
+            y_loc.append(shots_df['LOC_Y'][y])
+            x_loc.append(shots_df['LOC_X'][y])
+    
+    
+    Hex = plt.hexbin(x=x_loc, y=y_loc,gridsize=grid_size,vmin = 0.0, vmax = 0.7,
+    cmap=plt.get_cmap('YlOrRd'), mincnt= min_show + 1)
 
+    # join shotchart with legue average
+    la_fg_pct = shots_df.merge(league_avg, on=['SHOT_ZONE_BASIC','SHOT_ZONE_AREA','SHOT_ZONE_RANGE'], how='left')
+
+    # Make hex distribution of the legue average FG % 
+    HexL = plt.hexbin(x=x_loc, y=y_loc, C=la_fg_pct['FG_PCT'],gridsize=grid_size, vmin = 0.0, vmax = 0.7, 
+    cmap=plt.get_cmap('YlOrRd'), mincnt=min_show)
+
+    # Make hex distribution of the palyer FG % 
+    HexC = plt.hexbin(x=x_loc, y=y_loc, C=shots_df['SHOT_MADE_FLAG'],gridsize=grid_size, vmin = 0.0, vmax = 0.7, 
+    cmap=plt.get_cmap('YlOrRd'), mincnt=min_show)
+
+    # Extract data from hexbins
     loc = HexC.get_offsets()
     acc = HexC.get_array()
+    la_acc = HexL.get_array()
     shots = Hex.get_array()
 
     xlocs = []
     ylocs = []
     accs_by_hex = []
+    la_accs_by_hex = []
+    diff_by_hex = []
     shots_by_hex = []
+    hex_size = []
 
     for i in range(len(loc)):
         xlocs.append(loc[i][0])
         ylocs.append(loc[i][1])
         accs_by_hex.append(acc[i])
+        la_accs_by_hex.append(la_acc[i])
+        diff_by_hex.append(acc[i] - la_acc[i])
         shots_by_hex.append(shots[i])
 
-#freq is % of total shots
-    freq_by_hex= list(map(lambda x: x/len(shots_df), shots_by_hex))
+    #freq is % of total shots
+    freq_by_hex = list(map(lambda x: x/len(shots_df), shots_by_hex))
+    hex_size = list(map(lambda x: x * 4, freq_by_hex))
+
 
     hexbin_text = [
-        '<i>Accuracy: </i>' + str(round(accs_by_hex[i]*100, 1)) + '%<BR>'
+        '<i>Legue FG: </i>' + str(round(la_accs_by_hex[i]*100, 1)) + '%<BR>'
+        '<i>Team FG: </i>' + str(round(accs_by_hex[i]*100, 1)) + '%<BR>'
+        '<i>Difference: </i>' + str(round(diff_by_hex[i]*100, 1)) + '%<BR>'
         '<i>Frequency: </i>' + str(round(freq_by_hex[i]*100, 2)) + '%'
         for i in range(len(freq_by_hex))
     ]
 
+        
+    max_val = max(diff_by_hex) - max(diff_by_hex) * 0.2
+    min_val = min(diff_by_hex)
     fig.add_trace(go.Scatter(x=xlocs, y=ylocs, mode='markers', name='markers', 
-                        marker=dict(size=freq_by_hex, sizemode='area', sizeref= 2. * max(freq_by_hex) / (18. ** 2), 
-                                    sizemin=4.5,color=accs_by_hex, colorscale='YlOrRd',line=dict(width=1, color='#333333'),
+                        marker=dict(size=freq_by_hex, sizemode='area', sizeref= 2. * max(freq_by_hex) / (12. ** 2), 
+                                    sizemin=3.,color=diff_by_hex, colorscale="RdYlBu",line=dict(width=1, color='black'),reversescale=True,
                                     colorbar=dict(thickness=15, x=0.84,y=0.87, yanchor='middle',len=0.2,
-                                                    title=dict(text="<B>Accuracy</B>",font=dict(size=11,color='#4d4d4d'))),
+                                                    title=dict(text="<B>vs League Avg</B>",font=dict(size=10,color='black')),
+                                                    tickvals=[max_val, 0, min_val], 
+                                                    ticktext=["Better", "On par", "Worse"]),
                                     symbol='hexagon'), text=hexbin_text, hoverinfo='text'))
 
     fig.update_layout(
         title={
-            'text': f"{name} {season_id} Shot Heatmap",
+            'text': f"{name} {season_id} Hex Shot Map",
             'y':0.98,
             'x':0.5,
             'xanchor': 'center',
-            'yanchor': 'top'})
+            'yanchor': 'top'
+            },
+         font=dict(color="black"))
 
 
 ####### Dash Layout ###########
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
-app.layout = html.Div([
-    html.Div([
-        #Search Bars
+def team_app():
+    return html.Div([
+        nav,
         html.Div([
-            dcc.Dropdown(
-                id='team',
-                options=get_teams_list(),
-                value=1610612737
-            )
-        ],
-        style={'width': '32%', 'float': 'left', 'display': 'inline-block'}),
+            #Search Bars
+            html.Div([
+                dcc.Dropdown(
+                    id='team',
+                    options=get_teams_list(),
+                    value=1610612737
+                )
+            ],
+            style={'width': '32%', 'float': 'left', 'display': 'inline-block'}),
 
-        html.Div([
-            dcc.Dropdown(
-                id='season',
-                value='2018-19'
-            ),
-        ],style={'width': '32%', 'float': 'center', 'display': 'inline-block','padding-left': '2%'}),
+            html.Div([
+                dcc.Dropdown(
+                    id='season',
+                    value='2018-19'
+                ),
+            ],style={'width': '32%', 'float': 'center', 'display': 'inline-block','padding-left': '2%'}),
 
-        html.Div([
-            dcc.Dropdown(
-                id='season_type',
-                options=[
-                    {'label': 'Regular Season', 'value': 'Regular Season'},
-                    {'label': 'Playoffs', 'value': 'Playoffs'}
-                ],
-                value='Regular Season'
-            )
-        ],
-        style={'width': '32%', 'float': 'right', 'display': 'inline-block'})
-        
-    ]),
+            html.Div([
+                dcc.Dropdown(
+                    id='season_type',
+                    options=[
+                        {'label': 'Regular Season', 'value': 'Regular Season'},
+                        {'label': 'Playoffs', 'value': 'Playoffs'}
+                    ],
+                    value='Regular Season'
+                )
+            ],
+            style={'width': '32%', 'float': 'right', 'display': 'inline-block'})
+            
+        ]),
 
-    #Shot Chart Tabs
-    dcc.Tabs([
-        dcc.Tab(label='Shot Chart', children=[
-            dcc.Graph(id='shot_chart')
-        ]),
-        dcc.Tab(label='Heatmap', children=[
-            dcc.Graph(id='heatmap')
-        ]),
-        dcc.Tab(label='Hexbin', children=[
-            dcc.Graph(id='hexbin')
-        ]),
-    ],style={'width': '55%', 'float': 'left', 'display': 'inline-block'})
-])
+        #Shot Chart Tabs
+        dcc.Tabs([
+            dcc.Tab(label='Shot Chart', children=[
+                dcc.Graph(id='team_shot_chart')
+            ]),
+            dcc.Tab(label='Heatmap', children=[
+                dcc.Graph(id='team_heatmap')
+            ]),
+            dcc.Tab(label='Hexbin', children=[
+                dcc.Graph(id='team_hexbin')
+            ]),
+        ],style={'width': '55%', 'float': 'left', 'display': 'inline-block'})
+    ])
+    
+
+     
 
 ###### Callback Dash Functions ##########
 @app.callback(
@@ -348,15 +400,8 @@ def get_active_seasons(selected_team):
 
     return season_lst
 
-@app.callback(
-    [Output('shot_chart', 'figure'),
-    Output('heatmap', 'figure'),
-    Output('hexbin', 'figure')],
-    [Input('team', 'value'),
-    Input('season', 'value'),
-    Input('season_type', 'value')]
-)
-def display_shot_charts(team, season, season_type):
+
+def display_team_shot_charts(team, season, season_type):
     shots_df,league_avg = get_team_shotchartdetail(team, season, season_type)
     name = teams.find_team_name_by_id(team)['full_name']
     
@@ -371,7 +416,7 @@ def display_shot_charts(team, season, season_type):
         make_heatmap(heat_fig,shots_df,name,season)
         draw_plotly_court(heat_fig, layer='above')
             
-        make_team_hexbin(hex_fig,shots_df,name,season)
+        make_team_hexbin(hex_fig,shots_df,league_avg,name,season)
         draw_plotly_court(hex_fig)
     else:
         draw_plotly_court(shot_fig)

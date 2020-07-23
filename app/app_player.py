@@ -19,6 +19,10 @@ import scipy.stats as st
 import requests
 from datetime import date
 
+## Navbar
+from navbar import Navbar
+nav = Navbar()
+
 ####### Analysis, Visualization, Data Pull Functions ############
 def get_players_list():
     player_dict_lst = players.get_players()
@@ -226,7 +230,11 @@ def make_shot_chart (fig, shots_df, name, season_id):
             'y':0.98,
             'x':0.5,
             'xanchor': 'center',
-            'yanchor': 'top'})
+            'yanchor': 'top'},
+        legend=dict(x=0.80,y=0.94,
+            bordercolor="black",
+            bgcolor="LightSteelBlue",
+            borderwidth=0.5))
 
 def make_heatmap(fig, shots_df, name, season_id):
     cubehelix_cs=[[0.0, '#ffffff'],[0.16666666666666666, '#edcfc9'],[0.3333333333333333, '#daa2ac'],[0.5, '#bc7897'],
@@ -247,7 +255,6 @@ def make_heatmap(fig, shots_df, name, season_id):
             'yanchor': 'top'})
 
 def make_hexbin(fig, shots_df,league_avg,in_type,name,season_id):
-    
     grid_size= 40 
     min_show = max(2, round(len(shots_df)* 0.001)) # min count for shots in hex
     
@@ -265,25 +272,10 @@ def make_hexbin(fig, shots_df,league_avg,in_type,name,season_id):
     cmap=plt.get_cmap('YlOrRd'), mincnt= min_show + 1)
 
     # join shotchart with legue average
-    la_basic = league_avg['SHOT_ZONE_BASIC']
-    la_area = league_avg['SHOT_ZONE_AREA']
-    la_range = league_avg['SHOT_ZONE_RANGE']
-    la_fg_pct = league_avg['FG_PCT']
-    la_fg_pct_player = []
-    shot_l = len(shots_df)
-    la_l = len(league_avg)
-
-    
-    for i in range(shot_l):
-        for j in range(la_l):
-            if shots_df['SHOT_ZONE_BASIC'][i] == la_basic[j] and \
-                shots_df['SHOT_ZONE_AREA'][i] == la_area[j] and \
-                shots_df['SHOT_ZONE_RANGE'][i] == la_range[j]:
-                la_fg_pct_player.append(la_fg_pct[j])
-                break
+    la_fg_pct = shots_df.merge(league_avg, on=['SHOT_ZONE_BASIC','SHOT_ZONE_AREA','SHOT_ZONE_RANGE'], how='left')
 
     # Make hex distribution of the legue average FG % 
-    HexL = plt.hexbin(x=x_loc, y=y_loc, C=la_fg_pct_player,gridsize=grid_size, vmin = 0.0, vmax = 0.7, 
+    HexL = plt.hexbin(x=x_loc, y=y_loc, C=la_fg_pct['FG_PCT'],gridsize=grid_size, vmin = 0.0, vmax = 0.7, 
     cmap=plt.get_cmap('YlOrRd'), mincnt=min_show)
 
     # Make hex distribution of the palyer FG % 
@@ -365,106 +357,108 @@ app.scripts.append_script({'external_url': 'https://code.jquery.com/jquery-3.5.1
 app.scripts.append_script({'external_url': 'https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js'})
 app.scripts.append_script({'external_url': 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js'})
 
-app.layout = html.Div([
-    #Search Bars
-    html.Div([
-        html.Div([
-            dcc.Dropdown(
-                id='player',
-                options=get_players_list(),
-                value=202695
-            )
-        ],
-        style={'width': '32%', 'float': 'left', 'display': 'inline-block'}),
-
-        html.Div([
-            dcc.Dropdown(
-                id='season',
-                value='2018-19'
-            ),
-        ],style={'width': '32%', 'float': 'center', 'display': 'inline-block','paddingLeft': '2%'}),
-
-        html.Div([
-            dcc.Dropdown(
-                id='season_type',
-                options=[
-                    {'label': 'Regular Season', 'value': 'Regular Season'},
-                    {'label': 'Playoffs', 'value': 'Playoffs'}
-                ],
-                value='Regular Season'
-            )
-        ],
-        style={'width': '32%', 'float': 'right', 'display': 'inline-block'})     
-    ]),
-
-    #Shot Charts and Top Left Info
-    html.Div(children=[
-        #Shot Chart Tabs
-        dcc.Tabs([
-            dcc.Tab(label='Shot Chart', children=[
-                dcc.Graph(id='shot_chart')
-            ]),
-            dcc.Tab(label='Heatmap', children=[
-                dcc.Graph(id='heatmap')
-            ]),
-            dcc.Tab(label='Hexbin', children=[
-                dcc.Graph(id='hexbin')
-            ]),
-        ]),
-
-        html.Div(children='''Shot Chart Data Not Available For Seasons Prior to 1996-97*''',style={'color': 'red'}) 
-    ],style={'width': '45%', 'float': 'left', 'display': 'inline-block'}),
-
-    #Player Stats Top Right
-    html.Div(children=[
-
-        
+def player_app():
+    return html.Div([
+        nav,
+        #Search Bars
         html.Div([
             html.Div([
-                html.Img(id='player_img', style={'width': '30%','paddingLeft': '2%', 'display': 'inline-block', 'float': 'left', 'height': '100%'}),
+                dcc.Dropdown(
+                    id='player',
+                    options=get_players_list(),
+                    value=202695
+                )
+            ],
+            style={'width': '32%', 'float': 'left', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Dropdown(
+                    id='season',
+                    value='2018-19'
+                ),
+            ],style={'width': '32%', 'float': 'center', 'display': 'inline-block','paddingLeft': '2%'}),
+
+            html.Div([
+                dcc.Dropdown(
+                    id='season_type',
+                    options=[
+                        {'label': 'Regular Season', 'value': 'Regular Season'},
+                        {'label': 'Playoffs', 'value': 'Playoffs'}
+                    ],
+                    value='Regular Season'
+                )
+            ],
+            style={'width': '32%', 'float': 'right', 'display': 'inline-block'})     
+        ]),
+
+        #Shot Charts and Top Left Info
+        html.Div(children=[
+            #Shot Chart Tabs
+            dcc.Tabs([
+                dcc.Tab(label='Shot Chart', children=[
+                    dcc.Graph(id='shot_chart')
+                ]),
+                dcc.Tab(label='Heatmap', children=[
+                    dcc.Graph(id='heatmap')
+                ]),
+                dcc.Tab(label='Hexbin', children=[
+                    dcc.Graph(id='hexbin')
+                ]),
+            ]),
+
+            html.Div(children='''Shot Chart Data Not Available For Seasons Prior to 1996-97*''',style={'color': 'red'}) 
+        ],style={'width': '45%', 'float': 'left', 'display': 'inline-block'}),
+
+        #Player Stats Top Right
+        html.Div(children=[
+
+            
+            html.Div([
+                html.Div([
+                    html.Img(id='player_img', style={'width': '30%','paddingLeft': '2%', 'display': 'inline-block', 'float': 'left', 'height': '100%'}),
+
+                    html.Table([
+                        html.Tbody([
+                            html.Tr([
+                                html.Td(id='timeframe', style={'border': '1px solid white','color': 'white'}, colSpan=4)
+                            ]),
+
+                            html.Tr([
+                                html.Td(id='player_pts', style={'border': '1px solid white','color': 'white'}),
+                                html.Td(id='player_reb', style={'border': '1px solid white','color': 'white'}),
+                                html.Td(id='player_ast', style={'border': '1px solid white','color': 'white'}),
+                                html.Td(id='player_pie', style={'border': '1px solid white','color': 'white'}),
+                            ])
+                        ])
+                    ])
+                ]),
+                
+                html.Div([
+                    html.H3(id='player_name', style={'color':'white'}),
+                    html.Img(id='team_logo', style={'width':'5%'}),
+                    html.Div(id='player_team_pos', style={'display': 'inline-block', 'paddingLeft': '2%', 'color': 'white'})
+                ]),
 
                 html.Table([
                     html.Tbody([
                         html.Tr([
-                            html.Td(id='timeframe', style={'border': '1px solid white','color': 'white'}, colSpan=4)
+                            html.Td(id='player_ht', style={'border': '1px solid white','color': 'white'}),
+                            html.Td(id='player_wt', style={'border': '1px solid white','color': 'white'}),
+                            html.Td(id='player_prior', style={'border': '1px solid white','color': 'white', 'border-right': 'None'}, colSpan=2),
                         ]),
 
                         html.Tr([
-                            html.Td(id='player_pts', style={'border': '1px solid white','color': 'white'}),
-                            html.Td(id='player_reb', style={'border': '1px solid white','color': 'white'}),
-                            html.Td(id='player_ast', style={'border': '1px solid white','color': 'white'}),
-                            html.Td(id='player_pie', style={'border': '1px solid white','color': 'white'}),
+                            html.Td(id='player_age', style={'border': '1px solid white','color': 'white', 'border-bottom': 'None'}),
+                            html.Td(id='player_born', style={'border': '1px solid white','color': 'white', 'border-bottom': 'None'}),
+                            html.Td(id='player_draft', style={'border': '1px solid white','color': 'white', 'border-bottom': 'None'}),
+                            html.Td(id='player_exp', style={'border': '1px solid white','color': 'white', 'border-right': 'None', 'border-bottom': 'None'})
                         ])
                     ])
-                ])
-            ]),
-            
-            html.Div([
-                html.H3(id='player_name', style={'color':'white'}),
-                html.Img(id='team_logo', style={'width':'5%'}),
-                html.Div(id='player_team_pos', style={'display': 'inline-block', 'paddingLeft': '2%', 'color': 'white'})
-            ]),
+                ], style={'height':'50%'})
+            ], style={'width': '60%','paddingLeft': '2%', 'display': 'inline-block', 'float': 'right'})
 
-            html.Table([
-                html.Tbody([
-                    html.Tr([
-                        html.Td(id='player_ht', style={'border': '1px solid white','color': 'white'}),
-                        html.Td(id='player_wt', style={'border': '1px solid white','color': 'white'}),
-                        html.Td(id='player_prior', style={'border': '1px solid white','color': 'white', 'border-right': 'None'}, colSpan=2),
-                    ]),
-
-                    html.Tr([
-                        html.Td(id='player_age', style={'border': '1px solid white','color': 'white', 'border-bottom': 'None'}),
-                        html.Td(id='player_born', style={'border': '1px solid white','color': 'white', 'border-bottom': 'None'}),
-                        html.Td(id='player_draft', style={'border': '1px solid white','color': 'white', 'border-bottom': 'None'}),
-                        html.Td(id='player_exp', style={'border': '1px solid white','color': 'white', 'border-right': 'None', 'border-bottom': 'None'})
-                    ])
-                ])
-            ], style={'height':'50%'})
-        ], style={'width': '60%','paddingLeft': '2%', 'display': 'inline-block', 'float': 'right'})
-
-    ],style={'width': '50%', 'float': 'right', 'display': 'inline-block','background': '#1975FA', 'border-radius':'5px'})
-])
+        ],style={'width': '50%', 'float': 'right', 'display': 'inline-block','background': '#1975FA', 'border-radius':'5px'})
+    ])
 
 ###### Callback Dash Functions ##########
 @app.callback(
@@ -479,14 +473,7 @@ def get_active_seasons(selected_player):
 
     return season_lst
 
-@app.callback(
-    [Output('shot_chart', 'figure'),
-    Output('heatmap', 'figure'),
-    Output('hexbin', 'figure')],
-    [Input('player', 'value'),
-    Input('season', 'value'),
-    Input('season_type', 'value')]
-)
+
 def display_shot_charts(player, season, season_type):
     shots_df,league_avg = get_player_shotchartdetail(player,season,season_type)
     name = players.find_player_by_id(player)['full_name']
@@ -534,10 +521,7 @@ def display_shot_charts(player, season, season_type):
 
     return shot_fig, heat_fig, hex_fig
 
-@app.callback(
-    Output('player_img', 'src'),
-    [Input('player', 'value')]
-)
+
 def get_player_img(player):
     url = f'https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/{player}.png'
     r = requests.head(url)
@@ -546,24 +530,7 @@ def get_player_img(player):
     else:
         return 'https://stats.nba.com/media/img/league/nba-headshot-fallback.png'
 
-@app.callback(
-    [Output('player_name', 'children'),
-    Output('player_ht', 'children'),
-    Output('player_wt', 'children'),
-    Output('player_prior', 'children'),
-    Output('player_age', 'children'),
-    Output('player_born', 'children'),
-    Output('player_draft', 'children'),
-    Output('player_exp', 'children'),
-    Output('player_team_pos', 'children'),
-    Output('team_logo', 'src'),
-    Output('timeframe', 'children'),
-    Output('player_pts', 'children'),
-    Output('player_reb', 'children'),
-    Output('player_ast', 'children'),
-    Output('player_pie', 'children'),],
-    [Input('player', 'value')]
-)
+
 def get_player_common_info(player):
     player_info = commonplayerinfo.CommonPlayerInfo(player).get_data_frames()[0]
     name = player_info['DISPLAY_FIRST_LAST'][0]
