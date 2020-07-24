@@ -4,7 +4,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
 from app_player import player_app, display_shot_charts, get_active_seasons, get_player_img, get_player_common_info
-from app_team import team_app, display_team_shot_charts
+from app_team import team_app, display_team_shot_charts, get_team_common_info
 from homepage import Homepage
 
 
@@ -74,7 +74,7 @@ def update_player_img(player):
     return url
 
 
-
+#player img
 @app.callback(
     [Output('player_name', 'children'),
     Output('player_ht', 'children'),
@@ -95,6 +95,31 @@ def update_player_img(player):
 )
 def update_player_img(player):
     return get_player_common_info(player)
+
+#team info
+@app.callback(
+    [Output('team_name', 'children'),
+    Output('team_city', 'children'),
+    Output('team_conf', 'children'),
+    Output('team_div', 'children'),
+    Output('team_minYear', 'children'),
+    Output('team_maxYear', 'children'),
+    # Output('team_manager', 'children'),
+    Output('head_coach', 'children'),
+    Output('team_img', 'src'),
+    Output('team_pts', 'children'),
+    Output('team_reb', 'children'),
+    Output('team_ast', 'children'),
+    Output('team_opp_pts', 'children'),
+    Output('team_pts_rank', 'children'),
+    Output('team_reb_rank', 'children'),
+    Output('team_ast_rank', 'children'),
+    Output('team_opp_pts_rank', 'children'),
+    Output('team_roster', 'data'),],
+    [Input('team', 'value')]
+)
+def update_player_img(team):
+    return get_team_common_info(team)
 
 
 # homgpage graph

@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import dash
+import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
@@ -12,6 +13,11 @@ from nba_api.stats.static import teams
 from nba_api.stats.endpoints import shotchartdetail
 from nba_api.stats.endpoints import playercareerstats
 from nba_api.stats.endpoints import teamyearbyyearstats
+from nba_api.stats.endpoints import teaminfocommon
+from nba_api.stats.endpoints import teamdetails
+from nba_api.stats.endpoints import teamdashlineups
+from nba_api.stats.endpoints import commonteamroster
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -335,8 +341,23 @@ def make_team_hexbin(fig, shots_df,league_avg,name,season_id):
 
 
 ####### Dash Layout ###########
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', 
+                        'https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+
+app.scripts.append_script({'external_url': 'https://code.jquery.com/jquery-3.5.1.slim.min.js'})
+app.scripts.append_script({'external_url': 'https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js'})
+app.scripts.append_script({'external_url': 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js'})
+
+tb_center = {
+    'display': 'flex',
+    'justifyContent': 'center',
+}
+tb_big_center = {
+    'display': 'flex',
+    'fontSize': '40px',
+    'justifyContent': 'center',
+}
 
 def team_app():
     return html.Div([
@@ -373,22 +394,138 @@ def team_app():
             
         ]),
 
-        #Shot Chart Tabs
-        dcc.Tabs([
-            dcc.Tab(label='Shot Chart', children=[
-                dcc.Graph(id='team_shot_chart')
+        html.Div(children=[
+            #Shot Chart Tabs
+            dcc.Tabs([
+                dcc.Tab(label='Shot Chart', children=[
+                    dcc.Graph(id='team_shot_chart')
+                ]),
+                dcc.Tab(label='Heatmap', children=[
+                    dcc.Graph(id='team_heatmap')
+                ]),
+                dcc.Tab(label='Hexbin', children=[
+                    dcc.Graph(id='team_hexbin')
+                ]),
             ]),
-            dcc.Tab(label='Heatmap', children=[
-                dcc.Graph(id='team_heatmap')
-            ]),
-            dcc.Tab(label='Hexbin', children=[
-                dcc.Graph(id='team_hexbin')
-            ]),
-        ],style={'width': '55%', 'float': 'left', 'display': 'inline-block'})
+
+            html.Div(children='''Shot Chart Data Not Available For Seasons Prior to 1996-97*''',
+            style={'color': 'red', 'paddingLeft': '38px', 'zIndex': '9', 'position': 'absolute','marginTop': '-24px'}) 
+        ],style={'width': '45%', 'float': 'left', 'display': 'inline-block'}),
+
+        #Team profile Top Right
+        html.Div(children=[
+            html.Div([
+                html.Div([
+                    html.Img(id='team_img', style={'width': '40%','display': 'inline-block', 'float': 'left', 'height': '100%'}),
+                ]),
+                
+                html.Div([
+                    html.H3(id='team_name', style={'color':'white'}),
+                    html.Div(id='team_city', style={'display': 'inline-block', 'paddingLeft': '2%', 'color': 'white'})
+                ]),
+
+                html.Table([
+                    html.Tbody([
+                        html.Tr([
+                            html.Td([
+                                html.Div('Record:'),
+                                html.Div(id='team_conf',style={'paddingLeft': '7%'}),
+                                html.Div(id='team_div',style={'paddingLeft': '7%'}),
+                            ],style={'border': '1px solid white','color': 'white','padding': '0 4px 0'}, colSpan=3), 
+                            # html.Td(id='team_manager', style={'border': '1px solid white','color': 'white','padding': '0 4px 0'}),
+                        ]),
+
+                        html.Tr([
+                            html.Td(id='team_minYear', style={'border': '1px solid white','color': 'white','padding': '0 4px 0'}),
+                            html.Td(id='team_maxYear', style={'border': '1px solid white','color': 'white','padding': '0 4px 0'}),
+                            html.Td(id='head_coach', style={'border': '1px solid white','color': 'white','padding': '0 4px 0'}),
+                        ]),
+                    ])
+                ], style={'height':'50%'})
+            ], style={'display': 'inline-block', 'float': 'left', "width":"92%"}),
+
+        ],style={'margin': '2% 2% 0', "width":"50%",
+                'padding': '10px 10px 10px',
+                'display': 'inline-block','background': '#1975FA', 'border-radius':'5px'},
+            id='team_profile'),
+    
+        # team stats
+        html.Div([
+            html.Table([
+                html.Tbody([
+                    html.Tr([
+                        html.Td([
+                            html.Div("Team Points Per Game: "),
+                            html.Div(id='team_pts',style=tb_big_center),
+                            html.Div(id='team_pts_rank',style=tb_center),
+                            ],
+                        style={'border': '1px solid white','color': 'white','padding': '12px'}),
+                        # html.Td([
+                        #     html.Div("Average Field Goals Made: "),
+                        #     html.Div(id='team_fgm',style=tb_big_center),
+                        #     html.Div(id='team_fgm_rank',style=tb_center),],
+                        # style={'border': '1px solid white','color': 'white','padding': '12px'}),
+                        html.Td([
+                            html.Div("Team Assists Per Game: "),
+                            html.Div(id='team_ast',style=tb_big_center),
+                            html.Div(id='team_ast_rank',style=tb_center),
+                            ],
+                        style={'border': '1px solid white','color': 'white','padding': '12px'}),                        
+                    ]),
+                    html.Tr([
+                        html.Td([
+                            html.Div("Rebound Per Game: "),
+                            html.Div(id='team_reb',style=tb_big_center),
+                            html.Div(id='team_reb_rank',style=tb_center),
+                            ],
+                        style={'border': '1px solid white','color': 'white','padding': '12px'}),
+                        html.Td([
+                            html.Div("Opponent points per game: "),
+                            html.Div(id='team_opp_pts',style=tb_big_center),
+                            html.Div(id='team_opp_pts_rank',style=tb_center),],
+                        style={'border': '1px solid white','color': 'white','padding': '12px'}),
+                        # html.Td([
+                        #     html.Div("Game play: "),
+                        #     html.Div(id='team_gp',style=tb_big_center),
+                        #     html.Div(id='team_gp_rank',style=tb_center),
+                        #     ],
+                        # style={'border': '1px solid white','color': 'white','padding': '12px'}),                        
+                    ]),
+                ])
+            ], style={'margin': 'auto'})
+        ], style={'marginLeft': '2%', 
+                'padding': '23px', "width":"50%",
+                'display': 'inline-block','background': '#1975FA', 'border-radius':'5px'}, 
+            id='team_stats'),
+
+        # team player
+        html.Div([
+            html.Br(),
+            html.H2("Players List"),
+            dash_table.DataTable(
+                id='team_roster', columns=[
+                    {'name': 'Season', 'id': 'SEASON'},
+                    {'name': 'Player', 'id': 'PLAYER'},
+                    {'name': 'Jersey number', 'id': 'NUM'},
+                    {'name': 'Position', 'id': 'POSITION'},
+                    {'name': 'Height', 'id': 'HEIGHT'},
+                    {'name': 'Weight', 'id': 'WEIGHT'},
+                    {'name': 'Birth Date', 'id': 'BIRTH_DATE'},
+                    {'name': 'Age', 'id': 'AGE'},
+                    {'name': 'Years Active', 'id': 'EXP'},
+                    {'name': 'Drafted From', 'id': 'SCHOOL'},
+                    # {'name': 'Player', 'id': 'PLAYER_ID'},
+                    ]
+            )
+        ], style={
+                'width': '95%', #Use when we show 6 team stats
+                'paddingLeft': '23px',
+                'display': 'inline-block', 'border-radius':'5px'}, 
+            id='team_player_stats')
+
     ])
     
 
-     
 
 ###### Callback Dash Functions ##########
 @app.callback(
@@ -449,6 +586,74 @@ def display_team_shot_charts(team, season, season_type):
                 'xanchor': 'center',
                 'yanchor': 'top'}) 
     return shot_fig, heat_fig, hex_fig
+
+# def get_team_img(player):
+#     url = f'https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/{player}.png'
+#     r = requests.head(url)
+#     if r.status_code == 200:
+#         return url
+#     else:
+#         return 'https://stats.nba.com/media/img/league/nba-headshot-fallback.png'
+
+
+def rank_name(rank):
+    if rank % 10 == 1:
+        return str(rank) + "st"
+    elif rank % 10 == 2:
+        return str(rank) + "nd"
+    elif rank % 10 == 3:
+        return str(rank) + "rd"
+    else:
+        return str(rank) + "th"
+
+def get_team_common_info(team):
+    team_info = teaminfocommon.TeamInfoCommon(team).get_data_frames()[0]
+    team_info2 = teamdetails.TeamDetails(team).get_data_frames()[0]
+    team_stats = teaminfocommon.TeamInfoCommon(team).get_data_frames()[1]
+    team_players = teamdetails.TeamDetails(team).get_data_frames()[6]
+
+    team_roster_df = commonteamroster.CommonTeamRoster(1610612737).get_data_frames()[0]
+    player_columns=[{"name": i, "id": i} for i in team_roster_df.columns],
+    team_roster_df = team_roster_df.loc[team_roster_df['EXP']!="R"]
+    team_roster = team_roster_df.to_dict(orient='records')
+
+
+    name = team_info['TEAM_NAME'][0]
+    city = team_info['TEAM_CITY'][0]
+    team_conf = rank_name(team_info['CONF_RANK'][0]) + ' in ' + team_info['TEAM_CONFERENCE'][0] + " Conference" 
+    team_div = rank_name(team_info['DIV_RANK'][0]) + ' in ' + team_info['TEAM_DIVISION'][0] + ' Division'
+    firstactive = 'Year Founded: ' + team_info['MIN_YEAR'][0]
+    lastactive = 'Last Active: ' +  team_info['MAX_YEAR'][0]
+    # manager = 'Manager: ' + team_info2['GENERALMANAGER'][0]
+    head_coach = 'Head Coach: ' +  team_info2['HEADCOACH'][0]
+
+
+    abrv = team_info['TEAM_ABBREVIATION'][0]
+    team_logo = f'https://stats.nba.com/media/img/teams/logos/{abrv}_logo.svg'
+
+    team_pts = str(team_stats['PTS_PG'][0]) 
+    team_ast = str(team_stats['AST_PG'][0]) 
+    # team_oreb = str(team_info['OREB'][0]) 
+    # team_dreb = str(team_info['DREB'][0]) 
+    team_reb = str(team_stats['REB_PG'][0]) 
+    team_opp_pts = str(team_stats['OPP_PTS_PG'][0]) 
+    team_pts_rank = rank_name(team_stats['PTS_RANK'][0]) 
+    team_ast_rank = rank_name(team_stats['AST_RANK'][0]) 
+    # team_oreb_rank = rank_name(team_info['OREB_RANK'][0]) 
+    # team_dreb_rank = rank_name(team_info['DREB_RANK'][0]) 
+    team_reb_rank = rank_name(team_stats['REB_RANK'][0]) 
+    team_opp_pts_rank = rank_name(team_stats['OPP_PTS_RANK'][0]) 
+
+
+
+    # ppg = team_info['PTS_PG'][0]
+    # rpg = team_info['REB_PG'][0]
+    # apg = team_info['AST_PG'][0]
+
+    return name, city, team_conf, team_div, firstactive, lastactive, head_coach, team_logo, \
+            team_pts, team_reb, team_ast, team_opp_pts,\
+            team_pts_rank, team_reb_rank, team_ast_rank,team_opp_pts_rank, team_roster
+
 
 
 #### Run ###
