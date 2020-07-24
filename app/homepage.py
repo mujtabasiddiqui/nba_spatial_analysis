@@ -112,17 +112,14 @@ body3 = dbc.Container(
                 dbc.Col(
                     [   html.Br(),
                     
-                        html.H2("What is NBA Analysis?"),
+                        html.H2("What is Spot-Up?"),
                         dcc.Markdown(
                             """
-                            Analytics is a key factor in the modern NBA. Many teams have adopted analytics 
-                            to change the way they play and scout. The introduction of analytics in sports has 
-                            led to teams valuing play that is seen as more efficient and taking shots with the highest rate 
-                            of return. Spatial analysis in the NBA is a fairly new field as opposed to more traditional 
-                            statistics tracking and even advanced analytics. This does not mean that the information necessary 
-                            for this analysis is not available, in fact the NBA has been tracking shot location data since 1997 
-                            and recently it has become more accurate with video tracking technologies.
+                            Spot-up is a spatial and statistical analysis tool for NBA players dating back from 1997 to now. Using this tool, you can visually analyze how players and team perform on the court and how impactful they’ve been over their NBA seasons. 
 
+                            Using our Spot-up shot charts, you can take a look at the total shots made and missed, heat maps of shot distribution, and a hex bin analysis comparing performance to league average performances.
+
+                            Just pick a player or a team, an NBA season, and a season period and you’re set.
                             """),],
                     md=4,),
 
