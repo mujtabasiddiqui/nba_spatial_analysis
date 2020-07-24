@@ -212,15 +212,23 @@ def make_shot_chart (fig, shots_df, name, season_id):
     params: fig-plotly graph object Figure, shots_df-DataFrame of shotchartdetail, name-name of player/team, season_id-year of season
     param-type: fig-plotly graph object Figure, shots_df- pandas DataFrame, name-string, season_id-string
     '''
+    limit = 400
+    make_df = shots_df.loc[shots_df['SHOT_MADE_FLAG']==1, ['LOC_X','LOC_Y']]
+    make_x_df = make_df[make_df['LOC_Y']<limit]['LOC_X']
+    make_y_df = make_df[make_df['LOC_Y']<limit]['LOC_Y']
+    miss_df = shots_df.loc[shots_df['SHOT_MADE_FLAG']==0, ['LOC_X','LOC_Y']]
+    miss_x_df = miss_df[miss_df['LOC_Y']<limit]['LOC_X']
+    miss_y_df = miss_df[miss_df['LOC_Y']<limit]['LOC_Y']
+
     fig.add_trace(go.Scatter(
-        x=shots_df[shots_df['SHOT_MADE_FLAG']==0]['LOC_X'],
-        y=shots_df[shots_df['SHOT_MADE_FLAG']==0]['LOC_Y'],
+        x=miss_x_df,
+        y=miss_y_df,
         mode='markers', name='Miss',
         marker=dict(size=5,color='red',line=dict(width=1, color='#333333'), symbol='x')
     ))
     fig.add_trace(go.Scatter(
-        x=shots_df[shots_df['SHOT_MADE_FLAG']==1]['LOC_X'],
-        y=shots_df[shots_df['SHOT_MADE_FLAG']==1]['LOC_Y'],
+        x=make_x_df,
+        y=make_y_df,
         mode='markers', name='Make',
         marker=dict(size=5,color='green',line=dict(width=1, color='#333333'), symbol='circle')
     ))
@@ -258,16 +266,11 @@ def make_hexbin(fig, shots_df,league_avg,in_type,name,season_id):
     grid_size= 40 
     min_show = max(2, round(len(shots_df)* 0.001)) # min count for shots in hex
     
-    x_loc = []
-    y_loc = []
-    y_limit = 300
+    y_limit = 400
+    xy = shots_df.loc[shots_df['LOC_Y']< y_limit, ['LOC_X','LOC_Y']]
+    x_loc = xy['LOC_X']
+    y_loc = xy['LOC_Y']
 
-    for y in range(len(shots_df['LOC_Y'])):
-        if shots_df['LOC_Y'][y] < y_limit:
-            y_loc.append(shots_df['LOC_Y'][y])
-            x_loc.append(shots_df['LOC_X'][y])
-    
-    
     Hex = plt.hexbin(x=x_loc, y=y_loc,gridsize=grid_size,vmin = 0.0, vmax = 0.7,
     cmap=plt.get_cmap('YlOrRd'), mincnt= min_show + 1)
 
@@ -331,7 +334,7 @@ def make_hexbin(fig, shots_df,league_avg,in_type,name,season_id):
     fig.add_trace(go.Scatter(x=xlocs, y=ylocs, mode='markers', name='markers', 
                         marker=dict(size=freq_by_hex, sizemode='area', sizeref= 2. * max(freq_by_hex) / (12. ** 2), 
                                     sizemin=3.,color=diff_by_hex, colorscale="RdYlBu",line=dict(width=1, color='black'),reversescale=True,
-                                    colorbar=dict(thickness=15, x=0.84,y=0.87, yanchor='middle',len=0.2,
+                                    colorbar=dict(thickness=15, x=0.80,y=0.87, yanchor='middle',len=0.2,
                                                     title=dict(text="<B>vs League Avg</B>",font=dict(size=10,color='black')),
                                                     tickvals=[max_val, 0, min_val], 
                                                     ticktext=["Better", "On par", "Worse"]),
