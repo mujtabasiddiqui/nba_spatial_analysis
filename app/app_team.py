@@ -375,7 +375,7 @@ def team_app():
 
             html.Div([
                 dcc.Dropdown(
-                    id='season',
+                    id='team_season',
                     value='2018-19'
                 ),
             ],style={'width': '32%', 'float': 'center', 'display': 'inline-block','padding-left': '2%'}),
@@ -528,7 +528,7 @@ def team_app():
 
 
 ###### Callback Dash Functions ##########
-def get_active_seasons(selected_team):
+def get_team_active_seasons(selected_team):
     # career df
     career_df = teamyearbyyearstats.TeamYearByYearStats(team_id=selected_team).get_data_frames()[0]
     #List of active seasons

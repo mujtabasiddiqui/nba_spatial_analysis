@@ -4,7 +4,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
 from app_player import player_app, display_shot_charts, get_active_seasons, get_player_img, get_player_common_info
-from app_team import team_app, display_team_shot_charts, get_team_common_info
+from app_team import team_app, display_team_shot_charts, get_team_common_info, get_team_active_seasons
 from homepage import Homepage
 
 
@@ -37,6 +37,13 @@ def update_season(selected_player):
     return get_active_seasons(selected_player)
 
 @app.callback(
+    Output('team_season', 'options'),
+    [Input('team','value')]
+)
+def update_team_season(team):
+    return get_team_active_seasons(team)
+
+@app.callback(
     [Output('shot_chart', 'figure'),
     Output('heatmap', 'figure'),
     Output('hexbin', 'figure')],
@@ -55,7 +62,7 @@ def update_player_graph(player, season, season_type):
     Output('team_heatmap', 'figure'),
     Output('team_hexbin', 'figure')],
     [Input('team', 'value'),
-    Input('season', 'value'),
+    Input('team_season', 'value'),
     Input('season_type', 'value')]
 )
 def update_team_graph(team, season, season_type):
