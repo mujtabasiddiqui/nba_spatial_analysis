@@ -495,7 +495,7 @@ def team_app():
             ], style={'margin': 'auto'})
         ], style={'marginLeft': '3%', 
                 'padding': '23px', "width":"49%",
-                'display': 'inline-block','background': '#F0A74B', 'border-radius':'5px'}, 
+                'display': 'inline-block','background': '#424242', 'border-radius':'5px'}, 
             id='team_stats'),
 
         # team player
@@ -528,10 +528,6 @@ def team_app():
 
 
 ###### Callback Dash Functions ##########
-@app.callback(
-    Output('season', 'options'),
-    [Input('team','value')]
-)
 def get_active_seasons(selected_team):
     # career df
     career_df = teamyearbyyearstats.TeamYearByYearStats(team_id=selected_team).get_data_frames()[0]

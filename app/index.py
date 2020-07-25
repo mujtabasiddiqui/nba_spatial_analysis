@@ -29,13 +29,12 @@ def display_page(pathname):
         return Homepage()
 
 
-# @app.callback(
-#     Output('season', 'options'),
-#     [Input('player','value')]
-# )
-# def update_season(selected_player):
-#     season_lst = get_active_seasons(selected_player)
-#     return season_lst
+@app.callback(
+    Output('season', 'options'),
+    [Input('player','value')]
+)
+def update_season(selected_player):
+    return get_active_seasons(selected_player)
 
 @app.callback(
     [Output('shot_chart', 'figure'),
@@ -86,7 +85,7 @@ def update_player_img(player):
     Output('player_exp', 'children'),
     Output('player_team_pos', 'children'),
     Output('team_logo', 'src'),
-    Output('timeframe', 'children'),
+    # Output('timeframe', 'children'),
     Output('player_pts', 'children'),
     Output('player_reb', 'children'),
     Output('player_ast', 'children'),

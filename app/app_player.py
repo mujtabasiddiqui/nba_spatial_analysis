@@ -360,6 +360,16 @@ app.scripts.append_script({'external_url': 'https://code.jquery.com/jquery-3.5.1
 app.scripts.append_script({'external_url': 'https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js'})
 app.scripts.append_script({'external_url': 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js'})
 
+tb_center = {
+    'display': 'flex',
+    'justifyContent': 'center',
+}
+tb_big_center = {
+    'display': 'flex',
+    'fontSize': '40px',
+    'justifyContent': 'center',
+}
+
 def player_app():
     return html.Div([
         nav,
@@ -409,7 +419,9 @@ def player_app():
                 ]),
             ]),
 
-            html.Div(children='''Shot Chart Data Not Available For Seasons Prior to 1996-97*''',style={'color': 'red'}) 
+            html.Div(children='''Shot Chart Data Not Available For Seasons Prior to 1996-97*''',
+            style={'color': 'red', 'paddingLeft': '38px', 'zIndex': '9', 'position': 'absolute','marginTop': '-24px'}) 
+
         ],style={'width': '45%', 'float': 'left', 'display': 'inline-block'}),
 
         #Player Stats Top Right
@@ -418,22 +430,7 @@ def player_app():
             
             html.Div([
                 html.Div([
-                    html.Img(id='player_img', style={'width': '30%','paddingLeft': '2%', 'display': 'inline-block', 'float': 'left', 'height': '100%'}),
-
-                    html.Table([
-                        html.Tbody([
-                            html.Tr([
-                                html.Td(id='timeframe', style={'border': '1px solid white','color': 'white'}, colSpan=4)
-                            ]),
-
-                            html.Tr([
-                                html.Td(id='player_pts', style={'border': '1px solid white','color': 'white'}),
-                                html.Td(id='player_reb', style={'border': '1px solid white','color': 'white'}),
-                                html.Td(id='player_ast', style={'border': '1px solid white','color': 'white'}),
-                                html.Td(id='player_pie', style={'border': '1px solid white','color': 'white'}),
-                            ])
-                        ])
-                    ])
+                    html.Img(id='player_img', style={'width': '40%','display': 'inline-block', 'float': 'left', 'height': '100%'}),
                 ]),
                 
                 html.Div([
@@ -445,29 +442,67 @@ def player_app():
                 html.Table([
                     html.Tbody([
                         html.Tr([
-                            html.Td(id='player_ht', style={'border': '1px solid white','color': 'white'}),
-                            html.Td(id='player_wt', style={'border': '1px solid white','color': 'white'}),
-                            html.Td(id='player_prior', style={'border': '1px solid white','color': 'white', 'border-right': 'None'}, colSpan=2),
+                            html.Td(id='player_ht', style={'border': '1px solid white','color': 'white','padding': '0 4px 0'}),
+                            html.Td(id='player_wt', style={'border': '1px solid white','color': 'white','padding': '0 4px 0'}),
+                            html.Td(id='player_prior', style={'border': '1px solid white','color': 'white','padding': '0 4px 0'}, colSpan=2),
                         ]),
 
                         html.Tr([
-                            html.Td(id='player_age', style={'border': '1px solid white','color': 'white', 'border-bottom': 'None'}),
-                            html.Td(id='player_born', style={'border': '1px solid white','color': 'white', 'border-bottom': 'None'}),
-                            html.Td(id='player_draft', style={'border': '1px solid white','color': 'white', 'border-bottom': 'None'}),
-                            html.Td(id='player_exp', style={'border': '1px solid white','color': 'white', 'border-right': 'None', 'border-bottom': 'None'})
+                            html.Td(id='player_age', style={'border': '1px solid white','color': 'white','padding': '0 4px 0'}),
+                            html.Td(id='player_born', style={'border': '1px solid white','color': 'white','padding': '0 4px 0'}),
+                            html.Td(id='player_draft', style={'border': '1px solid white','color': 'white','padding': '0 4px 0'}),
+                            html.Td(id='player_exp', style={'border': '1px solid white','color': 'white','padding': '0 4px 0'})
                         ])
                     ])
                 ], style={'height':'50%'})
-            ], style={'width': '60%','paddingLeft': '2%', 'display': 'inline-block', 'float': 'right'})
+            ], style={'display': 'inline-block', 'float': 'left', "width":"92%"}),
 
-        ],style={'width': '50%', 'float': 'right', 'display': 'inline-block','background': '#1975FA', 'border-radius':'5px'})
+        ],style={'margin': '2% 3% 0', "width":"49%",
+                'padding': '10px 10px 10px',
+                'display': 'inline-block','background': '#F0A74B', 'border-radius':'5px'},
+            id='player_profile'),
+    
+        # Player stats
+        html.Div([
+             html.Table([
+                    html.Tbody([
+                        html.Tr([
+                            html.Td([
+                                html.Div("Player Points Per Game"),
+                                html.Div(id='player_pts', style=tb_big_center),
+                                # html.Div("player_pts_rank",style=tb_center)
+                                ],
+                                style={'border': '1px solid white','color': 'white','padding': '12px'}),
+                            html.Td([
+                                html.Div("Player Rebound Per Game"),
+                                html.Div(id='player_reb',style=tb_big_center),
+                                # html.Div("player_reb_rank",style=tb_center)
+                                ],
+                                style={'border': '1px solid white','color': 'white','padding': '12px'})
+                        ]),
+                        html.Tr([
+                            html.Td(
+                                [html.Div("Assist to Turnover Ratio:"),
+                                html.Div(id='player_ast', style=tb_big_center),
+                                # html.Div("player_ast_rank",style=tb_center)
+                                ],
+                                style={'border': '1px solid white','color': 'white','padding': '12px'}),
+                            html.Td(
+                                [html.Div("Player\'s Impact Eliminates: "),
+                                html.Div(id='player_pie', style=tb_big_center),
+                                # html.Div("player_pie_rank",style=tb_center)
+                                ],
+                                style={'border': '1px solid white','color': 'white','padding': '12px'})
+                        ])
+                    ])
+            ], style={'margin': 'auto'})
+        ], style={'marginLeft': '3%', 
+                'padding': '23px', "width":"49%",
+                'display': 'inline-block','background': '#424242', 'border-radius':'5px'}, 
+            id='t'),
     ])
 
 ###### Callback Dash Functions ##########
-@app.callback(
-    Output('season', 'options'),
-    [Input('player','value')]
-)
 def get_active_seasons(selected_player):
     # career df
     career_df = playercareerstats.PlayerCareerStats(player_id=selected_player).get_data_frames()[0]
@@ -555,14 +590,14 @@ def get_player_common_info(player):
     player_stats = commonplayerinfo.CommonPlayerInfo(player).get_data_frames()[1]
     timeframe = player_stats['TimeFrame'][0].capitalize() + ' Stats'
     if list(player_stats.columns)[-1] == 'PIE':
-        pie = 'PIE: ' + str(player_stats['PIE'][0])
+        pie = str(player_stats['PIE'][0])
     else:
-        pie = 'All Star: ' + str(player_stats['ALL_STAR_APPEARANCES'][0])
-    pts = 'PTS: ' + str(player_stats['PTS'][0])
-    reb = 'REB: ' + str(player_stats['PTS'][0])
-    ast = 'AST: ' + str(player_stats['AST'][0])
+        pie = str(player_stats['ALL_STAR_APPEARANCES'][0])
+    pts =  str(player_stats['PTS'][0])
+    reb = str(player_stats['REB'][0])
+    ast = str(player_stats['AST'][0])
     
-    return [jersey,name], height, weight, prior, age, born, draft, exp, [position,team], team_logo, timeframe, pts, reb, ast, pie
+    return [jersey,name], height, weight, prior, age, born, draft, exp, [position,team], team_logo, pts, reb, ast, pie
 
 #### Run ###
 if __name__ == '__main__':
