@@ -444,9 +444,9 @@ def team_app():
                 ], style={'height':'50%'})
             ], style={'display': 'inline-block', 'float': 'left', "width":"92%"}),
 
-        ],style={'margin': '2% 2% 0', "width":"50%",
+        ],style={'margin': '2% 3% 0', "width":"49%",
                 'padding': '10px 10px 10px',
-                'display': 'inline-block','background': '#1975FA', 'border-radius':'5px'},
+                'display': 'inline-block','background': '#F0A74B', 'border-radius':'5px'},
             id='team_profile'),
     
         # team stats
@@ -493,9 +493,9 @@ def team_app():
                     ]),
                 ])
             ], style={'margin': 'auto'})
-        ], style={'marginLeft': '2%', 
-                'padding': '23px', "width":"50%",
-                'display': 'inline-block','background': '#1975FA', 'border-radius':'5px'}, 
+        ], style={'marginLeft': '3%', 
+                'padding': '23px', "width":"49%",
+                'display': 'inline-block','background': '#F0A74B', 'border-radius':'5px'}, 
             id='team_stats'),
 
         # team player
