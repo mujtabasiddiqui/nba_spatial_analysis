@@ -23,6 +23,19 @@ from datetime import date
 from navbar import Navbar
 nav = Navbar()
 
+headers = {
+    'Host': 'stats.nba.com',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:61.0) Gecko/20100101 Chrome/80.0.3987.42 Firefox/61.0',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Referer': 'https://stats.nba.com/',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'x-nba-stats-origin': 'stats',
+    'x-nba-stats-token': 'true'
+}
+
+
 ####### Analysis, Visualization, Data Pull Functions ############
 def get_players_list():
     player_dict_lst = players.get_players()
@@ -32,7 +45,7 @@ def get_players_list():
     
 def get_player_shotchartdetail(player, season_id, season_type):
     # career df
-    career_df = playercareerstats.PlayerCareerStats(player_id=player).get_data_frames()[0]
+    career_df = playercareerstats.PlayerCareerStats(player_id=player,headers=headers).get_data_frames()[0]
     
     # team id during the season
     team_id = career_df[career_df['SEASON_ID'] == season_id]['TEAM_ID']
@@ -505,7 +518,7 @@ def player_app():
 ###### Callback Dash Functions ##########
 def get_active_seasons(selected_player):
     # career df
-    career_df = playercareerstats.PlayerCareerStats(player_id=selected_player).get_data_frames()[0]
+    career_df = playercareerstats.PlayerCareerStats(player_id=selected_player,headers=headers).get_data_frames()[0]
     #List of active seasons
     season_lst = [{'label': season, 'value': season} for season in career_df['SEASON_ID']]
 

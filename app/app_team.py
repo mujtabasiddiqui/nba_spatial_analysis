@@ -27,6 +27,20 @@ import scipy.stats as st
 from navbar import Navbar
 nav = Navbar()
 
+
+headers = {
+    'Host': 'stats.nba.com',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:61.0) Gecko/20100101 Chrome/80.0.3987.42 Firefox/61.0',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Referer': 'https://stats.nba.com/',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'x-nba-stats-origin': 'stats',
+    'x-nba-stats-token': 'true'
+}
+
+
 def get_teams_list():
     teams_dict_lst = teams.get_teams()
     team_lst = [{'label': team_dict['full_name'], 'value': team_dict['id']} for team_dict in teams_dict_lst]
@@ -39,7 +53,8 @@ def get_team_shotchartdetail(team_id, season_id, season_type):
                                                    player_id=0, 
                                                    season_type_all_star=season_type, 
                                                    season_nullable=season_id,
-                                                   context_measure_simple="FGA").get_data_frames()
+                                                   context_measure_simple="FGA",
+                                                   headers=headers).get_data_frames()
     
     return shotchartlist[0], shotchartlist[1]
 
@@ -530,7 +545,7 @@ def team_app():
 ###### Callback Dash Functions ##########
 def get_team_active_seasons(selected_team):
     # career df
-    career_df = teamyearbyyearstats.TeamYearByYearStats(team_id=selected_team).get_data_frames()[0]
+    career_df = teamyearbyyearstats.TeamYearByYearStats(team_id=selected_team,headers=headers).get_data_frames()[0]
     #List of active seasons
     season_lst = [{'label': season, 'value': season} for season in career_df['YEAR']]
 
