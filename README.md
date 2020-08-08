@@ -8,7 +8,7 @@ Eventually using these charts in a web application that can be used as a scounti
 
 ## Usage
 #### Website to view final app
-*Currently setting up hosting*
+*Currently setting up hosting* (API request issues while hosting)
 #### For local usage
 Requires Python 3, recommend using Anaconda3.7 distribution as it covers many of the requirements
 
