@@ -8,7 +8,7 @@ jupyter==1.0.0
 pylint==2.5.3
 bokeh==2.1.0
 matplotlib==3.2.1
-scipy==1.4.1
+scipy==1.10.0
 seaborn==0.10.1
 requests==2.23.0
 dash-bootstrap-components==0.10.3
